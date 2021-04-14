@@ -9,7 +9,8 @@ class App extends React.Component {
     super()
     this.handleClick = this.handleClick.bind(this)
     this.state = {
-      minutesLeft: 0,
+      timeLeft: 25 * 60,
+      minutesLeft: 25,
       secondsLeft: 0,
       session: 25,
       break: 5,
@@ -23,22 +24,46 @@ class App extends React.Component {
   handleClick(event) {
     const id = event.target.id
     
-    if(id === "session-increment") this.setState(prevState => ({session: prevState.session + 1}))
-    if(id === "session-decrement") this.setState(prevState => ({session: prevState.session - 1}))
-    if(id === "break-increment") this.setState(prevState => ({break: prevState.break + 1}))
-    if(id === "break-decrement") this.setState(prevState => ({break: prevState.break - 1}))
-    if(id === "reset") console.log("hi")
+    if(id === "session-increment") this.setState(prevState => ({session: Math.min(120,prevState.session + 1)}))
+    if(id === "session-decrement") this.setState(prevState => ({session: Math.max(0,prevState.session - 1)}))
+    if(id === "break-increment") this.setState(prevState => ({break: Math.min(120, prevState.break + 1)}))
+    if(id === "break-decrement") this.setState(prevState => ({break: Math.max(0, prevState.break - 1)}))
+    if(id === "reset") this.setState({session: 25, break: 5, timeLeft: 25 * 60, started: false})
 
-    if(id === "start_stop") this.setState(prevState => ({started: !prevState.started}))
+    if(id === "start_stop") {
+      if(this.state.started) this.setState({started: false})
+      else {
+        this.setState(prevState => {
+          return {
+            timeLeft: prevState.session * 60,
+            started: true
+          }
+        })
+        
+      }
+    }
         
   }
+
+ componentDidMount() {
+   var intervalId = setInterval(() => {
+     if(this.state.started) {
+       this.setState(prevState => ({timeLeft: prevState.timeLeft-1}))
+     }
+   }, 1000)
+   this.setState({intervalId: intervalId})
+ }
+
+ componentWillUnmount() {
+   clearInterval(this.state.intervalId)
+ }
 
   render() {
 
     return (<div className="App">
       <div id="timer-container">
         <div id="timer-label">Session</div> 
-        <div id="time-left">25:00</div>
+        <div id="time-left">{Math.floor(this.state.timeLeft/60)}:{this.state.timeLeft%60}</div>
       </div>
       <div id="timer-buttons-container">
         <button id="start_stop" onClick={this.handleClick} className="button">{this.state.started ? "Stop" : "Start"}</button>
