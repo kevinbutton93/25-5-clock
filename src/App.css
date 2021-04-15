@@ -24,9 +24,11 @@
     flex-direction: column;
     justify-content: space-evenly;
     align-items: center;
+    
 }
 #time-left {
-    font-size: 13vh;
+    font-size: 12vh;
+    width: 100%;
 }
 #timer-buttons-container {
     display: flex;

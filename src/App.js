@@ -17,38 +17,60 @@ class App extends React.Component {
       started: false,
       time: "",
       timeEnd: "",
-      intervalId: null
+      intervalId: 0,
+      timedOut: false
     }
   }
 
   handleClick(event) {
     const id = event.target.id
-    
-    if(id === "session-increment") this.setState(prevState => ({session: Math.min(120,prevState.session + 1)}))
-    if(id === "session-decrement") this.setState(prevState => ({session: Math.max(0,prevState.session - 1)}))
-    if(id === "break-increment") this.setState(prevState => ({break: Math.min(120, prevState.break + 1)}))
-    if(id === "break-decrement") this.setState(prevState => ({break: Math.max(0, prevState.break - 1)}))
-    if(id === "reset") this.setState({session: 25, break: 5, timeLeft: 25 * 60, started: false})
+    if(!this.state.started){ 
+      
+      if(id === "session-increment") this.setState(prevState => ({
+        session: Math.min(60,prevState.session + 1),
+        timeLeft: prevState.timedOut ? prevState.timeLeft : Math.min(60 * 60 ,(prevState.session + 1) * 60)
+      }))
+      if(id === "session-decrement") this.setState(prevState => ({
+        session: Math.max(1,prevState.session - 1),
+        timeLeft: prevState.timedOut ? prevState.timeLeft : Math.max(60 ,(prevState.session - 1) * 60)
+      }))
+      if(id === "break-increment") this.setState(prevState => ({
+        break: Math.min(60, prevState.break + 1),
+        timeLeft: prevState.timedOut ? Math.min(60 * 60, (prevState.break + 1) * 60) : prevState.timeLeft
+      }))
+      if(id === "break-decrement") this.setState(prevState => ({
+        break: Math.max(1, prevState.break - 1),
+        timeLeft: prevState.timedOut ? Math.max(60, (prevState.break - 1) * 60) : prevState.timeLeft
+      }))
+      
+    }
+    if(id === "reset"){
+      document.getElementById("beep").pause()
+      document.getElementById("beep").currentTime = 0
+      this.setState({
+        session: 25, break: 5, timeLeft: 25 * 60, started: false, timedOut: false
+      })
+    }
 
     if(id === "start_stop") {
-      if(this.state.started) this.setState({started: false})
-      else {
-        this.setState(prevState => {
-          return {
-            timeLeft: prevState.session * 60,
-            started: true
-          }
-        })
-        
-      }
+      this.setState(prevState => ({started: !prevState.started}))
     }
         
   }
 
  componentDidMount() {
-   var intervalId = setInterval(() => {
-     if(this.state.started) {
-       this.setState(prevState => ({timeLeft: prevState.timeLeft-1}))
+  var intervalId = setInterval(() => {
+    if(this.state.started) {
+      this.setState(prevState => {
+        if(prevState.timeLeft === 0) {         
+          return {
+            timedOut: !prevState.timedOut,
+            timeLeft: prevState.timedOut ? prevState.session * 60 : prevState.break * 60
+          }
+        }
+        return {timeLeft: prevState.timeLeft-1}
+      })
+       
      }
    }, 1000)
    this.setState({intervalId: intervalId})
@@ -59,11 +81,18 @@ class App extends React.Component {
  }
 
   render() {
+    // formatting of the "time-left" Timer
+    let minutes = Math.floor(this.state.timeLeft / 60)
+    let seconds = this.state.timeLeft % 60
+    seconds = seconds < 10 ? "0" + seconds : seconds
+    minutes = minutes < 10 ? "0" + minutes : minutes
+
+    if(this.state.timeLeft === 0) document.getElementById("beep").play()
 
     return (<div className="App">
       <div id="timer-container">
-        <div id="timer-label">Session</div> 
-        <div id="time-left">{Math.floor(this.state.timeLeft/60)}:{this.state.timeLeft%60}</div>
+        <div id="timer-label">{this.state.timedOut ? "break" : "Session"}</div> 
+        <div id="time-left">{minutes}:{seconds}</div>
       </div>
       <div id="timer-buttons-container">
         <button id="start_stop" onClick={this.handleClick} className="button">{this.state.started ? "Stop" : "Start"}</button>
@@ -85,6 +114,11 @@ class App extends React.Component {
           <button id="break-decrement" onClick={this.handleClick} className="button">&#9660;</button>
         </div>
       </div>
+      <audio 
+        id="beep"
+        preload="auto"
+        src="https://raw.githubusercontent.com/freeCodeCamp/cdn/master/build/testable-projects-fcc/audio/BeepSound.wav"
+        />
     </div>)
   };
 }
