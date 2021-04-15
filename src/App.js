@@ -9,14 +9,10 @@ class App extends React.Component {
     super()
     this.handleClick = this.handleClick.bind(this)
     this.state = {
-      timeLeft: 25 * 60,
-      minutesLeft: 25,
-      secondsLeft: 0,
+      timeLeft: 1500, // 25 minutes in seconds
       session: 25,
       break: 5,
       started: false,
-      time: "",
-      timeEnd: "",
       intervalId: 0,
       timedOut: false
     }
@@ -25,7 +21,11 @@ class App extends React.Component {
   handleClick(event) {
     const id = event.target.id
     if(!this.state.started){ 
+      // if any of the arrow buttons are pressed when 
+      //the timer is running, they wont work
       
+      // if the session arrow buttons are pressed:
+      // incremement/decrement the session state, and the timeLeft state(if its timing session)
       if(id === "session-increment") this.setState(prevState => ({
         session: Math.min(60,prevState.session + 1),
         timeLeft: prevState.timedOut ? prevState.timeLeft : Math.min(60 * 60 ,(prevState.session + 1) * 60)
@@ -34,6 +34,9 @@ class App extends React.Component {
         session: Math.max(1,prevState.session - 1),
         timeLeft: prevState.timedOut ? prevState.timeLeft : Math.max(60 ,(prevState.session - 1) * 60)
       }))
+
+      // if the break arrow buttons are pressed: 
+      // incremement/decrement the break state, and the timeLeft state(if its timing break)
       if(id === "break-increment") this.setState(prevState => ({
         break: Math.min(60, prevState.break + 1),
         timeLeft: prevState.timedOut ? Math.min(60 * 60, (prevState.break + 1) * 60) : prevState.timeLeft
@@ -44,6 +47,9 @@ class App extends React.Component {
       }))
       
     }
+
+    // if the reset button is pressed:
+    // it resets the alarm audio and sets all the state back to default apart from intervalId
     if(id === "reset"){
       document.getElementById("beep").pause()
       document.getElementById("beep").currentTime = 0
@@ -52,12 +58,16 @@ class App extends React.Component {
       })
     }
 
+    // if the start/stop button is pressed it changes the state to the opposite of what it was
     if(id === "start_stop") {
       this.setState(prevState => ({started: !prevState.started}))
     }
         
   }
 
+  // when the App component first mounts, it sets the interval timer for 1sec
+  // if the timer is started it will reduce time left by 1 every second
+  // if the timeLeft state reaches 0 it will flip the timedOut state and set timeLeft to break or session
  componentDidMount() {
   var intervalId = setInterval(() => {
     if(this.state.started) {
@@ -75,7 +85,7 @@ class App extends React.Component {
    }, 1000)
    this.setState({intervalId: intervalId})
  }
-
+// interval Id i stored in state so it can be used outside componentDidMount
  componentWillUnmount() {
    clearInterval(this.state.intervalId)
  }
@@ -87,6 +97,7 @@ class App extends React.Component {
     seconds = seconds < 10 ? "0" + seconds : seconds
     minutes = minutes < 10 ? "0" + minutes : minutes
 
+    // when the timer hits 0 play the alarm
     if(this.state.timeLeft === 0) document.getElementById("beep").play()
 
     return (<div className="App">
